@@ -8,7 +8,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install the application dependencies
-RUN npm i
+RUN npm install
 
 # Copy the rest of the application code into the container
 COPY . .
@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 5000
 
 # Define the command to run your app
-CMD [ "node", "Server.js" ]
+CMD [ "node", "server.js" ]
