@@ -1,0 +1,63 @@
+#newly-updated
+name: CI/CD Pipeline for Node.js App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout code from GitHub
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Step 2: Set up Node.js environment
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '14'  # Specify Node.js version (adjust accordingly)
+    
+    # Step 3: Install Node.js dependencies
+    - name: Install dependencies
+      run: npm install
+
+    # Step 4: Build Docker image
+    - name: Build Docker image
+      run: docker build -t haribalans/b2bhubindia-backend .
+
+    # Step 5: Log in to Docker Hub and push the image
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}   # Set DockerHub credentials in GitHub Secrets
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Push Docker image to Docker Hub
+      run: docker push haribalans/b2bhubindia-backend
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 6: Configure AWS CLI
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1  # Adjust region accordingly
+
+    # Step 7: Update kubeconfig for AWS EKS
+    - name: Update kubeconfig for EKS
+      run: aws eks update-kubeconfig --name sample --region us-east-1
+
+    # Step 8: Deploy the application to Kubernetes
+    - name: Deploy Node.js app to Kubernetes
+      run: |
+        kubectl get ns
+        kubectl apply -f nodejsapp.yaml

@@ -1,0 +1,182 @@
+{
+    
+    "adminQueries": {
+
+        "createAdminTable": "CREATE TABLE IF NOT EXISTS AdminLogin (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), email VARCHAR(100) UNIQUE, password VARCHAR(255) NOT NULL, loginTime JSON, logoutTime JSON DEFAULT NULL, otp VARCHAR(6) DEFAULT NULL, empId VARCHAR(20), role VARCHAR(255));",
+        
+        "insertAdmin": "INSERT INTO AdminLogin (name, email, password, empId, role, loginTime) VALUES (?, ?, ?, ?, ?, JSON_ARRAY(NOW()))",
+
+        "updateOtp": "UPDATE AdminLogin SET otp = ? WHERE email = ?",
+    
+        "getAdmin": "SELECT name, email, password, otp, empId, role FROM AdminLogin WHERE email = ?",
+        
+        "updateAdminLogin": "UPDATE AdminLogin SET loginTime = JSON_ARRAY_APPEND(COALESCE(loginTime, JSON_ARRAY()), '$', NOW()) WHERE email = ?;",
+        
+        "updateAdminLogout": "UPDATE AdminLogin SET logoutTime = JSON_ARRAY_APPEND(COALESCE(logoutTime, JSON_ARRAY()), '$', NOW()) WHERE email = ?;",
+        
+        "updateAdminPassword": "UPDATE AdminLogin SET password = ? WHERE email = ?",
+
+        "getAllAdminLoginsAndLogouts": "SELECT name, email, loginTime, logoutTime FROM AdminLogin"
+    },
+
+    "customerQueries": {
+
+        "createCustomerTable" : "CREATE TABLE IF NOT EXISTS Customer(customerId VARCHAR(255) , CompanyName VARCHAR(200), PAN VARCHAR(200) UNIQUE, gstNo VARCHAR(255) UNIQUE , Email VARCHAR(255) UNIQUE, Password VARCHAR(255) default null, phoneNo VARCHAR(50) , TelephoneNo VARCHAR(50) DEFAULT NULL, address1 VARCHAR(300) default null, address2 VARCHAR(300) default null, landmark VARCHAR(255) default null, city VARCHAR(100) default null, state VARCHAR(100) default null, pinCode VARCHAR(100) default null, DateOfReg VARCHAR(40), otp VARCHAR(40) DEFAULT NULL, isSeller BOOLEAN DEFAULT FALSE, category VARCHAR(255) DEFAULT NULL, location VARCHAR(100) DEFAULT NULL)",
+        
+        "insertCustomer": "INSERT INTO Customer (CompanyName, PAN, gstNo, Email, Password, phoneNo, DateOfReg) VALUES (?, ?, ?, ?, ?, ?, ?)",
+
+        "insertSeller": "INSERT INTO Customer (CompanyName, PAN, gstNo, Email, Password, phoneNo, DateOfReg, isSeller) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+
+        "insertExcel": "INSERT INTO Customer (CompanyName, PAN, gstNo, Email, Password, phoneNo) VALUES (?, ?, ?, ?, ?, ?)",
+    
+        "getCustomerById" : "SELECT * FROM Customer WHERE CustomerId = ?",
+    
+        "getCustomerByEmail" : "SELECT customerId, CompanyName, PAN, gstNo, Email, Password, phoneNo, DateOfReg, isSeller FROM Customer WHERE Email = ?", 
+    
+        "getCustomerBygstNo" : "SELECT * FROM Customer WHERE gstNo = ?",
+
+        "insertOtp" : "UPDATE Customer SET otp = ? WHERE Email = ?",
+
+        "getOtp" : "SELECT otp FROM Customer WHERE Email = ?",
+    
+        "updatePassword":"UPDATE Customer SET Password = ?, otp = NULL WHERE Email = ?",
+
+        "getCustomers": "SELECT c.customerId, c.CompanyName, c.Email, c.gstNo, COUNT(od.orderId) AS orderCount FROM Customer c LEFT JOIN OrderDetails od ON c.customerId = od.customerId GROUP BY c.customerId ORDER BY c.DateOfReg DESC",
+
+        "encryptAllPasswords": "UPDATE Customer SET Password = ? WHERE Email = ?",
+
+        "getPasswordAndEmail": "SELECT Email, password FROM Customer",
+
+        "getAllSellers" : "SELECT customerId, CompanyName, PAN, gstNo, Email, phoneNo, DateOfReg FROM Customer WHERE isSeller = TRUE",
+
+        "upgradePremium" : "UPDATE Customer SET category = ?, location = ?  WHERE customerId = ? ",
+
+        "updateToSeller" : "UPDATE Customer SET  isSeller = TRUE WHERE Email = ? AND otp = ?",
+
+        "getCategory" : "SELECT category FROM Customer WHERE customerId = ?"
+
+    },
+
+    "productQueries" : {
+
+        "createProductTable": "CREATE TABLE IF NOT EXISTS Product(productId VARCHAR(255) PRIMARY KEY, name VARCHAR(255), CommonImage VARCHAR(255), description JSON, offerStartDate VARCHAR(15), offerStartTime VARCHAR(15), offerDuration DECIMAL(10, 4), costPerUnit JSON, category VARCHAR(10), adminEmail VARCHAR(255), createdAt VARCHAR(20), updatedAt VARCHAR(20) DEFAULT NULL)",
+
+        "insertIntoProductTable":"INSERT INTO Product(productId, name, CommonImage, description, offerStartDate, offerStartTime,offerDuration, costPerUnit, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+
+        "deleteProduct" : "DELETE FROM Product WHERE productId = ?",
+
+        "getCount" : "SELECT poId FROM Product ORDER BY poId DESC LIMIT 1"
+    },
+
+    "orderQueries" : {
+
+    "createOrderTable": "CREATE TABLE IF NOT EXISTS orderDetails (orderId VARCHAR(255) PRIMARY KEY, customerId VARCHAR(255),companyname VARCHAR(255), phone_no VARCHAR(13), address1 VARCHAR(255),  address2 VARCHAR(200), city VARCHAR(200), state VARCHAR(255), email VARCHAR(255), landmark VARCHAR(255),zip_code VARCHAR(255), gst_no VARCHAR(255), requested_sample BOOLEAN default false, date_of_order VARCHAR(25), productId varchar(255),product_name VARCHAR(255), product_quantity INT, product_type VARCHAR(255),total_amount DECIMAL(15, 2), invoiceUrl VARCHAR(255) default null,payment_verified BOOLEAN default false, deliveryStatus BOOLEAN default false, payment_status BOOLEAN default false,paymentUrl VARCHAR(255) default null)",
+
+    "insertOrder": "INSERT INTO orderDetails (customerId, companyname, gst_no, productId, product_name, product_quantity, product_type, date_of_order, total_amount,email,phone_no,address1,address2,city, state,landmark,zip_code,requested_sample, invoiceUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+
+    "getOrderId": "SELECT * FROM orderDetails WHERE orderId = ?",
+
+    "updatePayment": "UPDATE orderDetails SET payment_verified = true WHERE orderId = ?",
+
+    "getStateSales" : "SELECT state, COUNT(orderId) AS orderCount FROM orderDetails GROUP BY state",
+
+    "getCustomerOrders": "SELECT * FROM orderDetails WHERE customerId = ?",
+
+    "updateOrderStatus" : "UPDATE orderDetails SET deliveryStatus = 1 WHERE orderId = ?"
+
+    },
+
+    "transactionQueries" : {
+
+        "createTransactionTable" : "CREATE TABLE IF NOT EXISTS Transactions(transId varchar(255) primary key ,orderId varchar(255), accountNo varchar(255), transactionId varchar(255), dateOfTransaction varchar(255), transactionType varchar(255) default 'credit', invoiceNo varchar(255), amount varchar(255), paymentMode varchar(255), paymentStatus boolean default true, paymentVerified boolean default false,paymentApprovedDate varchar(255))",
+
+
+        "getTransactionByOrderId": "SELECT * FROM Transactions WHERE orderId = ?",
+
+        "getAllTransactions": "SELECT c.CompanyName,t.accountNo,t.invoiceNo, od.date_of_order ,t.amount,t.paymentStatus FROM Transactions t JOIN orderDetails od ON t.orderId = od.orderId JOIN Customer c ON od.customerId = c.customerId;",
+          
+        "insertTransactions": "INSERT INTO Transactions (orderId, accountNo, transactionId, dateOfTransaction, transactionType, invoiceNo, amount) VALUES (?, ?, ?, ?, ?, ?, ?)",
+
+        "getTransactionSumByDay": "SELECT SUM(amount) FROM Transactions WHERE STR_TO_DATE(dateOfTransaction, '%Y-%m-%d') = CURDATE()"
+
+    },
+
+    "invoiceQueries" : {
+
+        "createInvoiceTable" : "CREATE TABLE IF NOT EXISTS Invoice(invoiceId varchar(255) primary key, invoiceLink varchar(255), invoiceDate varchar(25), orderId varchar(255), transId varchar(255) default null)",
+    
+        "insertInvoiceTable" : "INSERT INTO Invoice( invoiceLink, invoiceDate, orderId, transId) VALUES ( ?, ?, ?, ?)",
+
+        "getAllInvoices" : "SELECT i.invoiceId as 'invoiceId', c.CompanyName as 'companyName', od.orderId as 'orderId', od.totalAmount, i.invoiceDate as 'invoiceDate',  od.paymentStatus, i.invoiceLink from invoice i JOIN orderDetails od on od.orderId = i.orderId JOIN customer c ON c.customerId = od.customerId"
+
+    },
+
+    "shipmentQueries" : {
+       
+        "createShipmentTable" : "CREATE TABLE IF NOT EXISTS Shipment(shipmentId varchar(50) NOT NULL, orderId varchar(40) NOT NULL, CompanyName varchar(255), productName varchar(40), shippingAddress varchar(200), shipmentStatus boolean default false)",
+       
+        "getShipmentTables" : "SELECT * FROM shipment"
+    },
+
+    "warehouseLocations" : {
+        "createwarehouseLocations" : "CREATE TABLE IF NOT EXISTS WarehouseLocation(locationId INT AUTO_INCREMENT, orderId VARCHAR(255), warehouseLocation TEXT, warehouseURL TEXT)",
+        "insertLocation" : "INSERT INTO WarehouseLocation(orderId, warehouseLocation, warehouseURL) VALUES (?,?,?);",
+        "getAllLocations" : "SELECT * FROM WarehouseLocation"
+    },
+
+    "sellerQueries": {
+        
+        "createSellerProducts" :  "CREATE TABLE IF NOT EXISTS SellerProducts (productId VARCHAR(255) PRIMARY KEY, customerId VARCHAR(255), productName VARCHAR(255) NOT NULL, productImg VARCHAR(255), price VARCHAR(50), units VARCHAR(50), isOrganic BOOLEAN, moisture VARCHAR(50), shelfLife VARCHAR(50), validity DATE, description TEXT, packaging JSON, productType VARCHAR(255), isApproved BOOLEAN DEFAULT FALSE, isPublish BOOLEAN DEFAULT FALSE, category VARCHAR(10));",
+
+        "insertSellerProducts" : "INSERT INTO SellerProducts VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+
+        "getCount" : "SELECT productId FROM SellerProducts ORDER BY productId DESC LIMIT 1",
+
+        "getAllSellerProducts" : "SELECT * FROM SellerProducts",
+
+        "getALlSellerProductsAlongWithCustomerDetails" : "SELECT c.Email, c.CompanyName, c.phoneNo, c.PAN, c.gstNo, c.DateOfReg, c.isSeller, c.category, s.productId, s.customerId, s.productName, s.productType, s.price, s.units, s.productImg, s.isOrganic, s.moisture, s.shelfLife, s.validity, s.description, s.packaging, s.productType, s.isPublish, s.category FROM SellerProducts s LEFT JOIN Customer c On s.customerId = c.customerId",
+
+        "getProductsById" : "SELECT * FROM SellerProducts WHERE productId = ?",
+
+        "getProductsByCustomerId" : "SELECT * FROM SellerProducts WHERE CustomerId = ?",
+
+        "deleteProductById" : "DELETE FROM SellerProducts WHERE customerId = ? AND productId = ?",
+
+        "deleteProductByCustomerId" : "DELETE FROM SellerProducts WHERE CustomerId = ?",
+
+        "updateProductById" : "Update SellerProducts SET productName = ?, productImg = ?, price = ?, units = ?, isOrganic = ?, moisture = ?, shelfLife = ?, validity = ?, description = ?, packaging = ?, productType = ? WHERE customerId = ? AND productId = ?", 
+
+        "updateProductStatusId" : "UPDATE SellerProducts SET isApproved = TRUE WHERE productId = ?",
+
+        "updatePublishByProductId" : "UPDATE SellerProducts SET isPublish = TRUE WHERE productId = ?",
+
+        "getAllProducts" : "SELECT * FROM SellerProducts"
+    },
+
+    "POQueries" : {
+
+        "createPO" : "CREATE TABLE IF NOT EXISTS PurchaseOrder (poId VARCHAR(255) PRIMARY KEY, PurchaseOrderURL TEXT DEFAULT NULL, customerId VARCHAR(255), orderId VARCHAR(255), quantity VARCHAR(255), totalPrice VARCHAR(255), createdAt VARCHAR(255), updatedAt VARCHAR(255) DEFAULT, poStatus BOOLEAN DEFAULT FALSE, productId VARCHAR(255))",
+
+        "insertPO" : "INSERT INTO PurchaseOrder(poId, customerId, orderId, quantity, totalPrice, createdAt, productId ) VALUES(?, ?, ?, ?, ?, ?, ?)",
+
+        "updatePOURLAndStatusById" : "UPDATE PurchaseOrder SET PurchaseOrderURL = ?, poStatus = ?, updatedAt = ?  WHERE poId = ?",
+
+        "getAllPos" : "SELECT po.poId, po.customerId, po.PurchaseOrderURL, po.totalPrice, po.poStatus, po.quantity, s.productName, c.CompanyName FROM PurchaseOrder po LEFT JOIN SellerProducts s ON po.productId = s.productId LEFT JOIN Customer c ON po.customerId = c.customerId",
+
+        "getPo" : "SELECT po.poId,po.createdAt, po.totalPrice, po.quantity, po.PurchaseOrderURL, po.productId, sp.productType FROM PurchaseOrder po JOIN SellerProducts sp ON po.productId = sp.productId WHERE po.customerId = ?;",
+        
+        "getCount" : "SELECT poId FROM PurchaseOrder ORDER BY poId DESC LIMIT 1"
+    },
+
+    "AdminTracker" : {
+
+        "createTable": "CREATE TABLE IF NOT EXISTS Actions (ActionId INTEGER PRIMARY KEY auto_increment, EmployeeId VARCHAR(255) NOT NULL, Role VARCHAR(255) NOT NULL, ActionDescription VARCHAR(255) NOT NULL, GeneratedId VARCHAR(30) DEFAULT NULL, ActionPerformed DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);",
+
+        "insert" : "INSERT INTO Actions (EmployeeId, Role,ActionDescription,GeneratedId,ActionPerformed) VALUES (?, ?, ?, ?, NOW())",
+
+        "getAllActions" : "SELECT * FROM Actions"
+    }
+    
+    
+    
+}
